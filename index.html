@@ -854,9 +854,11 @@ footer{padding-block:clamp(64px,8vw,110px) 40px}
   // current projects — edit this list to keep the section current
   const PHASES=["Discover","Define","Design","Engineer","Build"];
   const NOW=[
-    {name:"iMelo",desc:"Audience segments, scheduled sends and a faster composer for our asset and email platform.",type:"Software",phase:3,updated:"Sep 2026"},
-    {name:"Building Coffee",desc:"We're roasting, tasting and building our own coffee brand in-house — brand and product development together, from the beans to the bag system.",type:"Brand",phase:2,updated:"Aug 2026"},
-    {name:"Brewfé",desc:"Developing a coffee brewer for a client, from first concept through engineering.",type:"Product",phase:1,updated:"Sep 2026"}
+    {name:"iMelo™",desc:"Audience segments, scheduled sends and a faster composer for our asset and email platform.",type:"Software",phase:3,updated:"Sep 2026"},
+    {name:"Piccil",desc:"An app that helps pickleball players find partners and games at nearby courts.",type:"Software",phase:4,updated:"Nov 2026"},
+    {name:"Nha Roots",desc:"A private family-tree site where relatives share photos and stories, with sign-ins approved by the family.",type:"Software",phase:3,updated:"Nov 2026"},
+    {name:"City guide",desc:"A local guide to the shops, restaurants and events in a city, built for the people who live there.",type:"Software",phase:2,updated:"Oct 2026"},
+    {name:"Brewfé™",desc:"Developing a coffee brewer for a client, from first concept through engineering.",type:"Product",phase:1,updated:"Sep 2026"}
   ];
   document.getElementById('nowList').innerHTML=NOW.map(p=>`
     <li class="now-row">
