@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Client Portal · 3Caos Studio</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23171412'/%3E%3Ctext x='32' y='44' font-family='Arial,sans-serif' font-weight='800' font-size='34' text-anchor='middle' fill='%23C4561A'%3E3C%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#F6F4F0; --surface:#FFFFFF; --ink:#171412; --muted:#6F6862; --line:#E2DDD6;
+  --accent:#C4561A; --accent-text:#B04C14; --soft:#F8E6D9;
+  --ok:#1E8E5A; --warn:#C27A00; --bad:#B42318;
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"Instrument Sans","Helvetica Neue",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --ctl:48px; /* one height for every input and button */
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--body)}
+[hidden]{display:none!important}
+a{color:var(--accent-text)}
+h1,h2,h3{font-family:var(--display);margin:0;font-variation-settings:"wdth" 108}
+h1{font-size:clamp(30px,4vw,42px);font-weight:800;line-height:1.05}
+h2{font-size:22px;font-weight:700}
+h3{font-size:17px;font-weight:700}
+.wrap{max-width:980px;margin:0 auto;padding:0 clamp(16px,4vw,32px)}
+.top{border-bottom:1px solid var(--line);background:var(--surface)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:68px}
+.brand{font:800 20px var(--display);font-variation-settings:"wdth" 112;text-decoration:none;color:var(--ink)}
+.brand span{color:var(--accent)}
+.who{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--muted)}
+main{padding-block:40px 80px}
+.stack{display:flex;flex-direction:column;gap:20px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:clamp(20px,3vw,28px)}
+.eyebrow{font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent-text)}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+label.lbl{display:block;font-weight:600;font-size:15px;margin-bottom:6px}
+.input,select.input{height:var(--ctl);width:100%;font:400 16px var(--body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0 14px}
+textarea.input{height:auto;min-height:140px;padding:12px 14px;resize:vertical;line-height:1.5}
+.input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--soft)}
+.btn{height:var(--ctl);display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 22px;border-radius:999px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font:600 15px var(--body);cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{background:var(--accent);border-color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:default;background:var(--ink);border-color:var(--ink)}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.ghost:hover{background:var(--soft);border-color:var(--ink)}
+.btn.ok{background:var(--ok);border-color:var(--ok)}
+.btn.sm{--ctl:40px;padding:0 16px;font-size:14px}
+.row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.row>.grow{flex:1 1 220px}
+.msg{padding:12px 14px;border-radius:10px;font-size:15px}
+.msg.err{background:#FDECEA;color:var(--bad)}
+.msg.good{background:#E7F5EE;color:var(--ok)}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tabs .btn[aria-selected=true]{background:var(--ink);color:var(--bg)}
+.tabs .btn[aria-selected=false]{background:transparent;color:var(--ink)}
+.chip{display:inline-block;font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.06em;padding:4px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--line)}
+.chip.drafting{background:#FFF6E0;color:var(--warn);border-color:#F2DCA6}
+.chip.ready{background:var(--soft);color:var(--accent-text);border-color:#EFC7AC}
+.chip.published{background:#E7F5EE;color:var(--ok);border-color:#BFE3CF}
+.chip.needs_info,.chip.stale{background:#FFF6E0;color:var(--warn);border-color:#F2DCA6}
+.chip.rejected,.chip.failed{background:#FDECEA;color:var(--bad);border-color:#F5C2BD}
+.req{border-top:1px solid var(--line);padding-top:18px;display:flex;flex-direction:column;gap:10px}
+.req:first-child{border-top:0;padding-top:0}
+.req .head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
+.req p{margin:0}
+.req ul{margin:0;padding-left:20px}
+.req li{margin:2px 0}
+.quote{white-space:pre-wrap;background:var(--bg);border-radius:10px;padding:12px 14px}
+.thumbs{display:flex;gap:10px;flex-wrap:wrap}
+.thumbs figure{margin:0;width:96px;font-size:12px;color:var(--muted)}
+.thumbs img{width:96px;height:96px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block}
+.file-pick{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.file-pick input{position:absolute;left:-9999px}
+.signin{max-width:440px;margin:6vh auto 0}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;align-items:end}
+.check{display:flex;align-items:center;gap:8px;height:var(--ctl);font-size:15px}
+.check input{width:20px;height:20px;accent-color:var(--accent)}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="/">3Caos<span>.</span> Client Portal</a>
+  <div class="who" id="who" hidden><span id="who-email"></span><button class="btn ghost sm" id="signout" type="button">Sign out</button></div>
+</div></header>
+
+<main><div class="wrap">
+
+  <!-- Sign in -->
+  <section id="v-signin" class="signin card stack" hidden>
+    <div><span class="eyebrow">3Caos Studio</span><h1 style="margin-top:8px">Sign in</h1>
+    <p class="muted" style="margin-top:8px">Use the email and password 3Caos gave you.</p></div>
+    <form id="f-signin" class="stack">
+      <div><label class="lbl" for="si-email">Email</label><input class="input" id="si-email" type="email" autocomplete="username" required></div>
+      <div><label class="lbl" for="si-pass">Password</label><input class="input" id="si-pass" type="password" autocomplete="current-password" required></div>
+      <p class="msg err" id="si-err" hidden></p>
+      <button class="btn" type="submit">Sign in</button>
+      <button class="btn ghost" type="button" id="to-forgot">Forgot your password?</button>
+    </form>
+  </section>
+
+  <!-- First sign-in: choose a password -->
+  <section id="v-newpass" class="signin card stack" hidden>
+    <div><h1>Choose your password</h1><p class="muted" style="margin-top:8px">This is your first time signing in. Pick a password you'll remember: at least 10 characters with an uppercase letter, a lowercase letter and a number.</p></div>
+    <form id="f-newpass" class="stack">
+      <div><label class="lbl" for="np-pass">New password</label><input class="input" id="np-pass" type="password" autocomplete="new-password" minlength="10" required></div>
+      <div><label class="lbl" for="np-pass2">Type it again</label><input class="input" id="np-pass2" type="password" autocomplete="new-password" minlength="10" required></div>
+      <p class="msg err" id="np-err" hidden></p>
+      <button class="btn" type="submit">Save password and continue</button>
+    </form>
+  </section>
+
+  <!-- Forgot password -->
+  <section id="v-forgot" class="signin card stack" hidden>
+    <div><h1>Reset your password</h1><p class="muted" style="margin-top:8px" id="fg-help">Enter your email and we'll send you a code.</p></div>
+    <form id="f-forgot" class="stack">
+      <div><label class="lbl" for="fg-email">Email</label><input class="input" id="fg-email" type="email" autocomplete="username" required></div>
+      <div id="fg-step2" class="stack" hidden>
+        <div><label class="lbl" for="fg-code">Code from the email</label><input class="input" id="fg-code" inputmode="numeric" autocomplete="one-time-code"></div>
+        <div><label class="lbl" for="fg-pass">New password</label><input class="input" id="fg-pass" type="password" autocomplete="new-password" minlength="10"></div>
+      </div>
+      <p class="msg err" id="fg-err" hidden></p>
+      <button class="btn" type="submit" id="fg-btn">Send me a code</button>
+      <button class="btn ghost" type="button" id="fg-back">Back to sign in</button>
+    </form>
+  </section>
+
+  <!-- Client view -->
+  <section id="v-client" class="stack" hidden>
+    <div><span class="eyebrow" id="c-site"></span><h1 style="margin-top:8px">Request a website change</h1>
+    <p class="muted" style="margin-top:8px;max-width:640px">Describe what you'd like changed: prices, product details, wording, photos or contact info. We prepare a preview, 3Caos checks it, and then it goes live. Layout and design changes go to 3Caos directly.</p></div>
+    <form id="f-request" class="card stack">
+      <div><label class="lbl" for="rq-msg">What should change?</label>
+      <textarea class="input" id="rq-msg" maxlength="4000" required placeholder="Example: Change the Marigold Box price to $165, and use the photo I attached as its main picture."></textarea></div>
+      <div class="file-pick">
+        <label class="btn ghost" for="rq-files">Attach photos</label>
+        <input id="rq-files" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+        <span class="muted small">Up to 6 photos, JPG or PNG, under 5 MB each.</span>
+      </div>
+      <div class="thumbs" id="rq-thumbs"></div>
+      <p class="msg err" id="rq-err" hidden></p>
+      <p class="msg good" id="rq-ok" hidden></p>
+      <div><button class="btn" type="submit" id="rq-btn">Send request</button></div>
+    </form>
+    <div class="card stack">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2>Your requests</h2><button class="btn ghost sm" type="button" data-refresh>Refresh</button></div>
+      <div class="stack" id="c-list"></div>
+    </div>
+  </section>
+
+  <!-- Admin view -->
+  <section id="v-admin" class="stack" hidden>
+    <div><span class="eyebrow">3Caos admin</span><h1 style="margin-top:8px">Client changes</h1></div>
+    <div class="tabs" role="tablist">
+      <button class="btn sm" role="tab" aria-selected="true" data-tab="t-requests" type="button">Requests</button>
+      <button class="btn sm" role="tab" aria-selected="false" data-tab="t-new" type="button">Make a change</button>
+      <button class="btn sm" role="tab" aria-selected="false" data-tab="t-clients" type="button">Client sites</button>
+      <button class="btn sm" role="tab" aria-selected="false" data-tab="t-users" type="button">Logins</button>
+    </div>
+    <div id="t-requests" class="card stack">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2>All requests</h2><button class="btn ghost sm" type="button" data-refresh>Refresh</button></div>
+      <div class="stack" id="a-list"></div>
+    </div>
+    <div id="t-new" class="card stack" hidden>
+      <h2>Make a change for a client</h2>
+      <p class="muted small">Same as a client request, drafted to the preview link for you to approve.</p>
+      <form id="f-admin-request" class="stack">
+        <div><label class="lbl" for="ar-client">Client site</label><select class="input" id="ar-client" required></select></div>
+        <div><label class="lbl" for="ar-msg">What should change?</label><textarea class="input" id="ar-msg" maxlength="4000" required></textarea></div>
+        <p class="msg err" id="ar-err" hidden></p><p class="msg good" id="ar-ok" hidden></p>
+        <div><button class="btn" type="submit">Draft change</button></div>
+      </form>
+    </div>
+    <div id="t-clients" class="card stack" hidden>
+      <h2>Client sites</h2>
+      <table><thead><tr><th>Client</th><th>ID</th><th>Amplify app</th><th>Version</th><th></th></tr></thead><tbody id="cl-rows"></tbody></table>
+      <h3 style="margin-top:12px">Add or update a site</h3>
+      <form id="f-client" class="grid2">
+        <div><label class="lbl" for="cl-name">Client name</label><input class="input" id="cl-name" required placeholder="Ritual + Kind"></div>
+        <div><label class="lbl" for="cl-id">Client ID</label><input class="input" id="cl-id" required pattern="[a-z0-9][a-z0-9-]{1,40}" placeholder="ritualandkind"></div>
+        <div><label class="lbl" for="cl-app">Amplify app ID</label><input class="input" id="cl-app" required placeholder="d373joosodtqzc"></div>
+        <div><button class="btn" type="submit" style="width:100%">Save site</button></div>
+      </form>
+      <p class="msg err" id="cl-err" hidden></p><p class="msg good" id="cl-ok" hidden></p>
+    </div>
+    <div id="t-users" class="card stack" hidden>
+      <h2>Logins</h2>
+      <table><thead><tr><th>Email</th><th>Client</th><th>Status</th><th></th></tr></thead><tbody id="us-rows"></tbody></table>
+      <h3 style="margin-top:12px">Create a login</h3>
+      <form id="f-user" class="grid2">
+        <div><label class="lbl" for="us-email">Email</label><input class="input" id="us-email" type="email" required></div>
+        <div><label class="lbl" for="us-client">Client site</label><select class="input" id="us-client"></select></div>
+        <label class="check"><input type="checkbox" id="us-admin"> 3Caos admin</label>
+        <div><button class="btn" type="submit" style="width:100%">Create login</button></div>
+      </form>
+      <p class="muted small">They get an email with a temporary password and choose their own when they first sign in.</p>
+      <p class="msg err" id="us-err" hidden></p><p class="msg good" id="us-ok" hidden></p>
+    </div>
+  </section>
+
+  <p id="loading" class="muted">Loading…</p>
+</div></main>
+
+<script>
+/* ===== PORTAL SETTINGS (filled in from the AWS stack outputs) ===== */
+const CFG = {
+  apiUrl: 'https://agkj1gsa0h.execute-api.us-west-2.amazonaws.com',
+  region: 'us-west-2',
+  userPoolClientId: '6nmibvkvro61qftg4mcfflaqho'
+};
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const show = (id, text) => { const el = $(id); el.textContent = text || ''; el.hidden = !text; };
+const views = ['v-signin', 'v-newpass', 'v-forgot', 'v-client', 'v-admin'];
+const view = id => { views.forEach(v => $(v).hidden = v !== id); $('loading').hidden = true; };
+const STATUS = { drafting: 'Preparing preview', ready: 'Waiting for 3Caos review', published: 'Live', needs_info: 'Needs a closer look', rejected: 'Not published', failed: 'Something went wrong', stale: 'Needs redraft' };
+
+/* ----- Cognito (no SDK) ----- */
+async function idp(target, body) {
+  const r = await fetch(`https://cognito-idp.${CFG.region}.amazonaws.com/`, { method: 'POST', headers: { 'Content-Type': 'application/x-amz-json-1.1', 'X-Amz-Target': 'AWSCognitoIdentityProviderService.' + target }, body: JSON.stringify(body) });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(friendly(data.__type, data.message));
+  return data;
+}
+function friendly(type = '', msg = '') {
+  if (type.includes('NotAuthorized')) return msg.includes('expired') ? 'Your temporary password has expired. Ask 3Caos to send a new one.' : 'That email and password don\'t match.';
+  if (type.includes('InvalidPassword')) return 'Password needs at least 10 characters, with an uppercase letter, a lowercase letter and a number.';
+  if (type.includes('CodeMismatch')) return 'That code isn\'t right. Check the email and try again.';
+  if (type.includes('ExpiredCode')) return 'That code has expired. Ask for a new one.';
+  if (type.includes('LimitExceeded') || type.includes('TooManyRequests')) return 'Too many tries. Wait a few minutes and try again.';
+  return msg || 'Something went wrong. Please try again.';
+}
+let session = null; // {idToken, refreshToken, exp}
+const store = { save() { try { sessionStorage.setItem('caos', JSON.stringify(session)); } catch (e) {} }, load() { try { return JSON.parse(sessionStorage.getItem('caos')); } catch (e) { return null; } }, clear() { try { sessionStorage.removeItem('caos'); } catch (e) {} } };
+function setTokens(a, refresh) { session = { idToken: a.IdToken, refreshToken: refresh || a.RefreshToken || session?.refreshToken, exp: Date.now() + (a.ExpiresIn - 60) * 1000 }; store.save(); }
+async function token() {
+  if (!session) throw new Error('signed out');
+  if (Date.now() > session.exp) {
+    const r = await idp('InitiateAuth', { AuthFlow: 'REFRESH_TOKEN_AUTH', ClientId: CFG.userPoolClientId, AuthParameters: { REFRESH_TOKEN: session.refreshToken } }).catch(() => null);
+    if (!r?.AuthenticationResult) { signOut(); throw new Error('Please sign in again.'); }
+    setTokens(r.AuthenticationResult, session.refreshToken);
+  }
+  return session.idToken;
+}
+async function api(method, path, body) {
+  const r = await fetch(CFG.apiUrl + path, { method, headers: { Authorization: await token(), ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  const data = await r.json().catch(() => ({}));
+  if (r.status === 401) { signOut(); throw new Error('Please sign in again.'); }
+  if (!r.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
+  return data;
+}
+function signOut() { session = null; store.clear(); $('who').hidden = true; view('v-signin'); }
+$('signout').onclick = signOut;
+
+let pending = null; // NEW_PASSWORD_REQUIRED challenge
+$('f-signin').onsubmit = async e => {
+  e.preventDefault(); show('si-err');
+  const email = $('si-email').value.trim().toLowerCase();
+  try {
+    const r = await idp('InitiateAuth', { AuthFlow: 'USER_PASSWORD_AUTH', ClientId: CFG.userPoolClientId, AuthParameters: { USERNAME: email, PASSWORD: $('si-pass').value } });
+    if (r.ChallengeName === 'NEW_PASSWORD_REQUIRED') { pending = { email, session: r.Session }; view('v-newpass'); return; }
+    setTokens(r.AuthenticationResult); $('si-pass').value = ''; start();
+  } catch (err) { show('si-err', err.message); }
+};
+$('f-newpass').onsubmit = async e => {
+  e.preventDefault(); show('np-err');
+  if ($('np-pass').value !== $('np-pass2').value) return show('np-err', 'The two passwords don\'t match.');
+  try {
+    const r = await idp('RespondToAuthChallenge', { ChallengeName: 'NEW_PASSWORD_REQUIRED', ClientId: CFG.userPoolClientId, Session: pending.session, ChallengeResponses: { USERNAME: pending.email, NEW_PASSWORD: $('np-pass').value } });
+    setTokens(r.AuthenticationResult); pending = null; start();
+  } catch (err) { show('np-err', err.message); }
+};
+let forgotStep = 1;
+$('to-forgot').onclick = () => { forgotStep = 1; $('fg-step2').hidden = true; $('fg-btn').textContent = 'Send me a code'; $('fg-email').value = $('si-email').value; view('v-forgot'); };
+$('fg-back').onclick = () => view('v-signin');
+$('f-forgot').onsubmit = async e => {
+  e.preventDefault(); show('fg-err'); const email = $('fg-email').value.trim().toLowerCase();
+  try {
+    if (forgotStep === 1) {
+      await idp('ForgotPassword', { ClientId: CFG.userPoolClientId, Username: email });
+      forgotStep = 2; $('fg-step2').hidden = false; $('fg-btn').textContent = 'Save new password';
+      $('fg-help').textContent = 'If that email has a login, a code is on its way. Enter it below with your new password.';
+    } else {
+      await idp('ConfirmForgotPassword', { ClientId: CFG.userPoolClientId, Username: email, ConfirmationCode: $('fg-code').value.trim(), Password: $('fg-pass').value });
+      $('si-email').value = email; view('v-signin'); show('si-err'); alert('Password saved. Sign in with your new password.');
+    }
+  } catch (err) { show('fg-err', err.message); }
+};
+
+/* ----- requests ----- */
+let me = null;
+function reqHtml(r, admin) {
+  const when = new Date(r.createdAt || r.requestId.slice(0, 24)).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+  const list = (title, items) => items?.length ? `<div><strong class="small">${title}</strong><ul class="small">${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : '';
+  const key = `data-c="${esc(r.clientId)}" data-r="${esc(r.requestId)}"`;
+  return `<div class="req">
+    <div class="head"><span class="small muted">${admin ? `<strong style="color:var(--ink)">${esc(r.clientId)}</strong> · ` : ''}${esc(when)} · ${esc(r.submittedBy || '')}</span><span class="chip ${esc(r.status)}">${esc(STATUS[r.status] || r.status)}</span></div>
+    <div class="quote small">${esc(r.message)}</div>
+    ${r.uploads?.length ? `<p class="small muted">${r.uploads.length} photo${r.uploads.length > 1 ? 's' : ''} attached</p>` : ''}
+    ${r.summary ? `<p>${esc(r.summary)}</p>` : ''}
+    ${list('What changes', r.changes)}
+    ${list(r.status === 'needs_info' ? 'Why no preview was made' : 'Not included', r.cannotDo)}
+    ${admin ? list('Rule checks', r.errors) : ''}
+    ${r.note ? `<p class="small"><strong>Note from 3Caos:</strong> ${esc(r.note)}</p>` : ''}
+    ${r.status === 'drafting' ? '<p class="small muted">Usually ready in a minute or two.</p>' : ''}
+    <div class="row">
+      ${r.status === 'ready' && r.previewUrl ? `<a class="btn ghost sm" href="${esc(r.previewUrl)}" target="_blank" rel="noopener">Open preview</a>` : ''}
+      ${r.status === 'published' && r.liveUrl ? `<a class="btn ghost sm" href="${esc(r.liveUrl)}" target="_blank" rel="noopener">View live site</a>` : ''}
+      ${admin && r.status === 'ready' ? `<button class="btn ok sm" type="button" data-act="approve" ${key}>Approve and publish</button>` : ''}
+      ${admin && ['ready', 'needs_info', 'failed', 'stale', 'drafting'].includes(r.status) ? `<button class="btn ghost sm" type="button" data-act="reject" ${key}>Reject</button>` : ''}
+      ${admin && ['needs_info', 'failed', 'stale', 'rejected'].includes(r.status) ? `<button class="btn ghost sm" type="button" data-act="redraft" ${key}>Redraft</button>` : ''}
+    </div></div>`;
+}
+let poll;
+async function loadRequests() {
+  const box = me.isAdmin ? $('a-list') : $('c-list');
+  try {
+    const { requests } = await api('GET', '/requests');
+    box.innerHTML = requests.length ? requests.map(r => reqHtml(r, me.isAdmin)).join('') : '<p class="muted">No requests yet.</p>';
+    clearTimeout(poll); if (requests.some(r => r.status === 'drafting')) poll = setTimeout(loadRequests, 10000);
+  } catch (err) { box.innerHTML = `<p class="msg err">${esc(err.message)}</p>`; }
+}
+document.addEventListener('click', async e => {
+  if (e.target.closest('[data-refresh]')) return loadRequests();
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const path = `/requests/${encodeURIComponent(b.dataset.c)}/${encodeURIComponent(b.dataset.r)}/${b.dataset.act}`;
+  let body = {};
+  if (b.dataset.act === 'approve' && !confirm('Publish this change to the live site?')) return;
+  if (b.dataset.act === 'reject') { const note = prompt('Note for the client (optional):', ''); if (note === null) return; body = { note }; }
+  b.disabled = true; b.textContent = 'Working…';
+  try { await api('POST', path, body); } catch (err) { alert(err.message); }
+  loadRequests();
+});
+
+/* ----- client request form with photo uploads ----- */
+let files = [];
+$('rq-files').onchange = () => {
+  show('rq-err'); const picked = [...$('rq-files').files];
+  for (const f of picked) {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(f.type)) { show('rq-err', `${f.name}: photos must be JPG, PNG or WebP.`); continue; }
+    if (f.size > 5 * 1024 * 1024) { show('rq-err', `${f.name} is over 5 MB. Try a smaller version.`); continue; }
+    if (files.length < 6) files.push(f);
+  }
+  $('rq-files').value = ''; drawThumbs();
+};
+function drawThumbs() {
+  $('rq-thumbs').innerHTML = files.map((f, i) => `<figure><img src="${URL.createObjectURL(f)}" alt=""><figcaption>${esc(f.name.slice(0, 22))}<br><button class="btn ghost sm" style="--ctl:32px;padding:0 10px;margin-top:4px" type="button" data-rm="${i}">Remove</button></figcaption></figure>`).join('');
+  $('rq-thumbs').querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { files.splice(+b.dataset.rm, 1); drawThumbs(); });
+}
+$('f-request').onsubmit = async e => {
+  e.preventDefault(); show('rq-err'); show('rq-ok'); const btn = $('rq-btn'); btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    let uploads = [];
+    if (files.length) {
+      const res = await api('POST', '/uploads', { files: files.map(f => ({ name: f.name, type: f.type, size: f.size })) });
+      await Promise.all(res.uploads.map((u, i) => fetch(u.url, { method: 'PUT', headers: { 'Content-Type': files[i].type }, body: files[i] }).then(r => { if (!r.ok) throw new Error('A photo didn\'t upload. Please try again.'); })));
+      uploads = res.uploads.map(u => ({ key: u.key, name: u.name }));
+    }
+    await api('POST', '/requests', { message: $('rq-msg').value, uploads });
+    $('rq-msg').value = ''; files = []; drawThumbs();
+    show('rq-ok', 'Thank you. We\'re preparing a preview now, and 3Caos will review it before it goes live.');
+    loadRequests();
+  } catch (err) { show('rq-err', err.message); }
+  btn.disabled = false; btn.textContent = 'Send request';
+};
+
+/* ----- admin tabs ----- */
+document.querySelectorAll('[data-tab]').forEach(t => t.onclick = () => {
+  document.querySelectorAll('[data-tab]').forEach(x => { x.setAttribute('aria-selected', x === t); $(x.dataset.tab).hidden = x !== t; });
+  if (t.dataset.tab === 't-clients' || t.dataset.tab === 't-new') loadClients();
+  if (t.dataset.tab === 't-users') { loadClients(); loadUsers(); }
+  if (t.dataset.tab === 't-requests') loadRequests();
+});
+async function loadClients() {
+  try {
+    const { clients } = await api('GET', '/admin/clients');
+    $('cl-rows').innerHTML = clients.map(c => `<tr><td>${esc(c.name)}</td><td class="small">${esc(c.clientId)}</td><td class="small">${esc(c.amplifyAppId)}</td><td>${esc(c.version)}</td><td><button class="btn ghost sm" type="button" data-pub="${esc(c.clientId)}">Republish live</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">No sites yet.</td></tr>';
+    const opts = clients.map(c => `<option value="${esc(c.clientId)}">${esc(c.name)}</option>`).join('');
+    $('ar-client').innerHTML = opts; $('us-client').innerHTML = '<option value="">None (admin only)</option>' + opts;
+    $('cl-rows').querySelectorAll('[data-pub]').forEach(b => b.onclick = async () => {
+      if (!confirm('Redeploy the current live content for this site?')) return;
+      b.disabled = true; try { const r = await api('POST', `/admin/clients/${b.dataset.pub}/publish-current`); show('cl-ok', 'Publishing to ' + r.liveUrl); } catch (err) { show('cl-err', err.message); } b.disabled = false;
+    });
+  } catch (err) { show('cl-err', err.message); }
+}
+$('f-client').onsubmit = async e => {
+  e.preventDefault(); show('cl-err'); show('cl-ok');
+  try { await api('POST', '/admin/clients', { name: $('cl-name').value, clientId: $('cl-id').value.trim(), amplifyAppId: $('cl-app').value.trim() }); show('cl-ok', 'Site saved.'); e.target.reset(); loadClients(); }
+  catch (err) { show('cl-err', err.message); }
+};
+$('f-admin-request').onsubmit = async e => {
+  e.preventDefault(); show('ar-err'); show('ar-ok');
+  try { await api('POST', '/requests', { clientId: $('ar-client').value, message: $('ar-msg').value }); $('ar-msg').value = ''; show('ar-ok', 'Drafting now. It will show under Requests.'); }
+  catch (err) { show('ar-err', err.message); }
+};
+async function loadUsers() {
+  try {
+    const { users } = await api('GET', '/admin/users');
+    $('us-rows').innerHTML = users.map(u => `<tr><td>${esc(u.email)}</td><td class="small">${esc(u.clientId || '—')}</td><td class="small">${u.enabled ? (u.status === 'FORCE_CHANGE_PASSWORD' ? 'Invited' : 'Active') : 'Disabled'}</td><td><button class="btn ghost sm" type="button" data-user="${esc(u.username)}" data-on="${u.enabled}">${u.enabled ? 'Disable' : 'Enable'}</button></td></tr>`).join('');
+    $('us-rows').querySelectorAll('[data-user]').forEach(b => b.onclick = async () => {
+      try { await api('POST', `/admin/users/${encodeURIComponent(b.dataset.user)}/${b.dataset.on === 'true' ? 'disable' : 'enable'}`); loadUsers(); } catch (err) { show('us-err', err.message); }
+    });
+  } catch (err) { show('us-err', err.message); }
+}
+$('f-user').onsubmit = async e => {
+  e.preventDefault(); show('us-err'); show('us-ok');
+  try { const r = await api('POST', '/admin/users', { email: $('us-email').value, clientId: $('us-client').value, isAdmin: $('us-admin').checked }); show('us-ok', r.note); e.target.reset(); loadUsers(); }
+  catch (err) { show('us-err', err.message); }
+};
+
+/* ----- start ----- */
+async function start() {
+  try {
+    me = await api('GET', '/me');
+    $('who-email').textContent = me.email; $('who').hidden = false;
+    if (me.isAdmin) { view('v-admin'); loadRequests(); }
+    else { $('c-site').textContent = me.clientName || ''; view('v-client'); loadRequests(); }
+  } catch (err) { if (session) { show('si-err', err.message); } view('v-signin'); }
+}
+session = store.load();
+if (session) start(); else view('v-signin');
+</script>
+</body>
+</html>
