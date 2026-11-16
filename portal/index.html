@@ -83,6 +83,16 @@ th{font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.06em;color
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;align-items:end}
 .check{display:flex;align-items:center;gap:8px;height:var(--ctl);font-size:15px}
 .check input{width:20px;height:20px;accent-color:var(--accent)}
+.bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.bar .search{flex:1 1 240px}
+.bar select.input{width:auto;min-width:170px}
+.pager{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.pager:empty{display:none}
+.pager .btns{display:flex;gap:8px}
+.chip.urgent{background:#FDECEA;color:var(--bad);border-color:#F5C2BD}
+.chip.flexible{background:var(--bg);color:var(--muted)}
+.chip.overdue{background:var(--bad);color:#fff;border-color:var(--bad)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 </style>
 </head>
 <body>
@@ -139,6 +149,7 @@ th{font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.06em;color
     <form id="f-request" class="card stack">
       <div><label class="lbl" for="rq-msg">What should change?</label>
       <textarea class="input" id="rq-msg" maxlength="4000" required placeholder="Example: Change the Marigold Box price to $165, and use the photo I attached as its main picture."></textarea></div>
+      <div><label class="lbl" for="rq-pri">How soon is it needed?</label><select class="input" id="rq-pri" style="max-width:420px"><option value="standard" selected>Standard: live within 24 hours</option><option value="urgent">Urgent: live within 1 hour</option><option value="flexible">Flexible: live within 3 days</option></select></div>
       <div class="file-pick">
         <label class="btn ghost" for="rq-files">Attach photos</label>
         <input id="rq-files" type="file" accept="image/jpeg,image/png,image/webp" multiple>
@@ -151,7 +162,7 @@ th{font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.06em;color
     </form>
     <div class="card stack">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2>Your requests</h2><button class="btn ghost sm" type="button" data-refresh>Refresh</button></div>
-      <div class="stack" id="c-list"></div>
+      <div id="c-list-bar"></div><div class="stack" id="c-list"></div><div id="c-list-pager"></div>
     </div>
   </section>
 
@@ -166,13 +177,14 @@ th{font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.06em;color
     </div>
     <div id="t-requests" class="card stack">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2>All requests</h2><button class="btn ghost sm" type="button" data-refresh>Refresh</button></div>
-      <div class="stack" id="a-list"></div>
+      <div id="a-list-bar"></div><div class="stack" id="a-list"></div><div id="a-list-pager"></div>
     </div>
     <div id="t-new" class="card stack" hidden>
       <h2>Make a change for a client</h2>
       <p class="muted small">Same as a client request, drafted to the preview link for you to approve.</p>
       <form id="f-admin-request" class="stack">
         <div><label class="lbl" for="ar-client">Client site</label><select class="input" id="ar-client" required></select></div>
+        <div><label class="lbl" for="ar-pri">How soon is it needed?</label><select class="input" id="ar-pri" style="max-width:420px"><option value="standard" selected>Standard: live within 24 hours</option><option value="urgent">Urgent: live within 1 hour</option><option value="flexible">Flexible: live within 3 days</option></select></div>
         <div><label class="lbl" for="ar-msg">What should change?</label><textarea class="input" id="ar-msg" maxlength="4000" required></textarea></div>
         <p class="msg err" id="ar-err" hidden></p><p class="msg good" id="ar-ok" hidden></p>
         <div><button class="btn" type="submit">Draft change</button></div>
@@ -192,7 +204,9 @@ th{font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.06em;color
     </div>
     <div id="t-users" class="card stack" hidden>
       <h2>Logins</h2>
+      <div id="us-bar"></div>
       <table><thead><tr><th>Email</th><th>Client</th><th>Status</th><th></th></tr></thead><tbody id="us-rows"></tbody></table>
+      <div id="us-pager"></div>
       <h3 style="margin-top:12px">Create a login</h3>
       <form id="f-user" class="grid2">
         <div><label class="lbl" for="us-email">Email</label><input class="input" id="us-email" type="email" required></div>
@@ -221,6 +235,12 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const show = (id, text) => { const el = $(id); el.textContent = text || ''; el.hidden = !text; };
 const views = ['v-signin', 'v-newpass', 'v-forgot', 'v-client', 'v-admin'];
 const view = id => { views.forEach(v => $(v).hidden = v !== id); $('loading').hidden = true; };
+const PRI = { urgent: 'Urgent', standard: 'Standard', flexible: 'Flexible' };
+const isOpen = r => ['drafting', 'ready', 'needs_info', 'stale', 'failed'].includes(r.status) && !r.archived;
+const isOverdue = r => isOpen(r) && r.dueBy && Date.parse(r.dueBy) < Date.now();
+const fmt = d => new Date(d).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+// open requests first, soonest due first; then everything else newest first
+const byUrgency = (a, b) => (isOpen(b) - isOpen(a)) || (isOpen(a) ? Date.parse(a.dueBy || a.createdAt) - Date.parse(b.dueBy || b.createdAt) : b.requestId.localeCompare(a.requestId));
 const STATUS = { drafting: 'Preparing preview', ready: 'Waiting for 3Caos review', published: 'Live', needs_info: 'Needs a closer look', rejected: 'Not published', failed: 'Something went wrong', stale: 'Needs redraft' };
 
 /* ----- Cognito (no SDK) ----- */
@@ -295,6 +315,40 @@ $('f-forgot').onsubmit = async e => {
   } catch (err) { show('fg-err', err.message); }
 };
 
+
+/* ----- search, archive filter and pages for long lists ----- */
+const PAGE = 10;
+const lists = {};
+function listState(id, opts = {}) {
+  if (lists[id]) return lists[id];
+  const st = lists[id] = { q: '', page: 0, archived: false, items: [], ...opts };
+  const bar = $(id + '-bar');
+  bar.className = 'bar';
+  bar.innerHTML = `<input class="input search" type="search" placeholder="${esc(opts.placeholder || 'Search')}" aria-label="Search">`
+    + (opts.archive ? `<select class="input" aria-label="Show"><option value="active">Active</option><option value="archived">Archived</option></select>` : '');
+  bar.querySelector('.search').oninput = e => { st.q = e.target.value.trim().toLowerCase(); st.page = 0; st.draw(); };
+  const sel = bar.querySelector('select');
+  if (sel) sel.onchange = () => { st.archived = sel.value === 'archived'; st.page = 0; st.draw(); };
+  return st;
+}
+function paged(id, st, filtered, emptyText) {
+  const pages = Math.max(1, Math.ceil(filtered.length / PAGE));
+  st.page = Math.min(st.page, pages - 1);
+  const slice = st.all ? filtered : filtered.slice(st.page * PAGE, st.page * PAGE + PAGE);
+  const pager = $(id + '-pager');
+  pager.className = 'pager';
+  pager.innerHTML = filtered.length <= PAGE ? '' : st.all
+    ? `<span>All ${filtered.length}</span><span class="btns"><button class="btn ghost sm" type="button" data-all="0">Show ${PAGE} per page</button></span>`
+    : `<span>${st.page * PAGE + 1}–${st.page * PAGE + slice.length} of ${filtered.length}</span>
+    <span class="btns"><button class="btn ghost sm" type="button" data-pg="-1" ${st.page === 0 ? 'disabled' : ''}>Previous</button>
+    <button class="btn ghost sm" type="button" data-pg="1" ${st.page >= pages - 1 ? 'disabled' : ''}>Next</button>
+    <button class="btn ghost sm" type="button" data-all="1">View all</button></span>`;
+  pager.querySelectorAll('[data-pg]').forEach(b => b.onclick = () => { st.page += +b.dataset.pg; st.draw(); $(id + '-bar').scrollIntoView({ block: 'nearest' }); });
+  pager.querySelectorAll('[data-all]').forEach(b => b.onclick = () => { st.all = b.dataset.all === '1'; st.page = 0; st.draw(); if (!st.all) $(id + '-bar').scrollIntoView({ block: 'nearest' }); });
+  return { slice, empty: filtered.length ? '' : emptyText };
+}
+const matches = (q, ...vals) => !q || vals.flat().some(v => String(v ?? '').toLowerCase().includes(q));
+
 /* ----- requests ----- */
 let me = null;
 function reqHtml(r, admin) {
@@ -302,7 +356,8 @@ function reqHtml(r, admin) {
   const list = (title, items) => items?.length ? `<div><strong class="small">${title}</strong><ul class="small">${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : '';
   const key = `data-c="${esc(r.clientId)}" data-r="${esc(r.requestId)}"`;
   return `<div class="req">
-    <div class="head"><span class="small muted">${admin ? `<strong style="color:var(--ink)">${esc(r.clientId)}</strong> · ` : ''}${esc(when)} · ${esc(r.submittedBy || '')}</span><span class="chip ${esc(r.status)}">${esc(STATUS[r.status] || r.status)}</span></div>
+    <div class="head"><span class="small muted">${admin ? `<strong style="color:var(--ink)">${esc(r.clientId)}</strong> · ` : ''}${esc(when)} · ${esc(r.submittedBy || '')}${r.dueBy && isOpen(r) ? ` · Due ${esc(fmt(r.dueBy))}` : ''}</span>
+      <span class="chips">${r.priority && r.priority !== 'standard' ? `<span class="chip ${esc(r.priority)}">${esc(PRI[r.priority])}</span>` : ''}${isOverdue(r) ? '<span class="chip overdue">Overdue</span>' : ''}<span class="chip ${esc(r.status)}">${esc(STATUS[r.status] || r.status)}</span></span></div>
     <div class="quote small">${esc(r.message)}</div>
     ${r.uploads?.length ? `<p class="small muted">${r.uploads.length} photo${r.uploads.length > 1 ? 's' : ''} attached</p>` : ''}
     ${r.summary ? `<p>${esc(r.summary)}</p>` : ''}
@@ -317,16 +372,24 @@ function reqHtml(r, admin) {
       ${admin && r.status === 'ready' ? `<button class="btn ok sm" type="button" data-act="approve" ${key}>Approve and publish</button>` : ''}
       ${admin && ['ready', 'needs_info', 'failed', 'stale', 'drafting'].includes(r.status) ? `<button class="btn ghost sm" type="button" data-act="reject" ${key}>Reject</button>` : ''}
       ${admin && ['needs_info', 'failed', 'stale', 'rejected'].includes(r.status) ? `<button class="btn ghost sm" type="button" data-act="redraft" ${key}>Redraft</button>` : ''}
+      ${admin && !r.archived && !['drafting', 'ready'].includes(r.status) ? `<button class="btn ghost sm" type="button" data-act="archive" ${key}>Archive</button>` : ''}
+      ${admin && r.archived ? `<button class="btn ghost sm" type="button" data-act="unarchive" ${key}>Move back to active</button>` : ''}
     </div></div>`;
 }
 let poll;
 async function loadRequests() {
-  const box = me.isAdmin ? $('a-list') : $('c-list');
+  const id = me.isAdmin ? 'a-list' : 'c-list';
+  const st = listState(id, { archive: true, placeholder: me.isAdmin ? 'Search by client, words, person or status' : 'Search your requests' });
+  st.draw = () => {
+    const f = st.items.filter(r => !!r.archived === st.archived && matches(st.q, r.message, r.summary, r.clientId, r.submittedBy, STATUS[r.status], PRI[r.priority], isOverdue(r) ? 'overdue' : '', r.changes, r.cannotDo, r.note)).sort(byUrgency);
+    const { slice, empty } = paged(id, st, f, st.q ? 'Nothing matches that search.' : st.archived ? 'No archived requests.' : 'No requests yet.');
+    $(id).innerHTML = empty ? `<p class="muted">${empty}</p>` : slice.map(r => reqHtml(r, me.isAdmin)).join('');
+  };
   try {
     const { requests } = await api('GET', '/requests');
-    box.innerHTML = requests.length ? requests.map(r => reqHtml(r, me.isAdmin)).join('') : '<p class="muted">No requests yet.</p>';
+    st.items = requests; st.draw();
     clearTimeout(poll); if (requests.some(r => r.status === 'drafting')) poll = setTimeout(loadRequests, 10000);
-  } catch (err) { box.innerHTML = `<p class="msg err">${esc(err.message)}</p>`; }
+  } catch (err) { $(id).innerHTML = `<p class="msg err">${esc(err.message)}</p>`; }
 }
 document.addEventListener('click', async e => {
   if (e.target.closest('[data-refresh]')) return loadRequests();
@@ -364,8 +427,8 @@ $('f-request').onsubmit = async e => {
       await Promise.all(res.uploads.map((u, i) => fetch(u.url, { method: 'PUT', headers: { 'Content-Type': files[i].type }, body: files[i] }).then(r => { if (!r.ok) throw new Error('A photo didn\'t upload. Please try again.'); })));
       uploads = res.uploads.map(u => ({ key: u.key, name: u.name }));
     }
-    await api('POST', '/requests', { message: $('rq-msg').value, uploads });
-    $('rq-msg').value = ''; files = []; drawThumbs();
+    await api('POST', '/requests', { message: $('rq-msg').value, priority: $('rq-pri').value, uploads });
+    $('rq-msg').value = ''; $('rq-pri').value = 'standard'; files = []; drawThumbs();
     show('rq-ok', 'Thank you. We\'re preparing a preview now, and 3Caos will review it before it goes live.');
     loadRequests();
   } catch (err) { show('rq-err', err.message); }
@@ -398,17 +461,44 @@ $('f-client').onsubmit = async e => {
 };
 $('f-admin-request').onsubmit = async e => {
   e.preventDefault(); show('ar-err'); show('ar-ok');
-  try { await api('POST', '/requests', { clientId: $('ar-client').value, message: $('ar-msg').value }); $('ar-msg').value = ''; show('ar-ok', 'Drafting now. It will show under Requests.'); }
+  try { await api('POST', '/requests', { clientId: $('ar-client').value, message: $('ar-msg').value, priority: $('ar-pri').value }); $('ar-msg').value = ''; show('ar-ok', 'Drafting now. It will show under Requests.'); }
   catch (err) { show('ar-err', err.message); }
 };
 async function loadUsers() {
+  const st = listState('us', { placeholder: 'Search logins by email or client' });
+  st.draw = () => {
+    const f = st.items.filter(u => matches(st.q, u.email, u.clientId));
+    const { slice, empty } = paged('us', st, f, st.q ? 'Nothing matches that search.' : 'No logins yet.');
+    $('us-rows').innerHTML = empty ? `<tr><td colspan="4" class="muted">${empty}</td></tr>` : slice.map(u => `<tr><td>${esc(u.email)}</td><td class="small">${esc(u.clientId || '—')}</td><td class="small">${u.enabled ? (u.status === 'FORCE_CHANGE_PASSWORD' ? 'Invited' : 'Active') : 'Disabled'}</td><td><div class="row" style="gap:8px"><button class="btn ghost sm" type="button" data-edit="${esc(u.username)}" data-email="${esc(u.email)}">Edit email</button>${u.status === 'FORCE_CHANGE_PASSWORD' ? `<button class="btn ghost sm" type="button" data-resend="${esc(u.username)}">Resend invite</button>` : ''}<button class="btn ghost sm" type="button" data-user="${esc(u.username)}" data-on="${u.enabled}">${u.enabled ? 'Disable' : 'Enable'}</button><button class="btn ghost sm" type="button" data-del="${esc(u.username)}" data-email="${esc(u.email)}">Delete</button></div></td></tr>`).join('');
+    bindUserButtons();
+  };
   try {
-    const { users } = await api('GET', '/admin/users');
-    $('us-rows').innerHTML = users.map(u => `<tr><td>${esc(u.email)}</td><td class="small">${esc(u.clientId || '—')}</td><td class="small">${u.enabled ? (u.status === 'FORCE_CHANGE_PASSWORD' ? 'Invited' : 'Active') : 'Disabled'}</td><td><button class="btn ghost sm" type="button" data-user="${esc(u.username)}" data-on="${u.enabled}">${u.enabled ? 'Disable' : 'Enable'}</button></td></tr>`).join('');
+    st.items = (await api('GET', '/admin/users')).users.sort((a, b) => String(a.email).localeCompare(String(b.email)));
+    st.draw();
+  } catch (err) { show('us-err', err.message); }
+}
+function bindUserButtons() {
+    $('us-rows').querySelectorAll('[data-edit]').forEach(b => b.onclick = async () => {
+      show('us-err'); show('us-ok');
+      const mail = prompt('Correct email address for this login:', b.dataset.email);
+      if (mail === null || mail.trim().toLowerCase() === b.dataset.email) return;
+      b.disabled = true;
+      try { const r = await api('POST', `/admin/users/${encodeURIComponent(b.dataset.edit)}/email`, { email: mail.trim() }); show('us-ok', r.note); loadUsers(); } catch (err) { show('us-err', err.message); b.disabled = false; }
+    });
+    $('us-rows').querySelectorAll('[data-resend]').forEach(b => b.onclick = async () => {
+      show('us-err'); show('us-ok'); b.disabled = true;
+      try { const r = await api('POST', `/admin/users/${encodeURIComponent(b.dataset.resend)}/resend`); show('us-ok', r.note); } catch (err) { show('us-err', err.message); }
+      b.disabled = false;
+    });
     $('us-rows').querySelectorAll('[data-user]').forEach(b => b.onclick = async () => {
       try { await api('POST', `/admin/users/${encodeURIComponent(b.dataset.user)}/${b.dataset.on === 'true' ? 'disable' : 'enable'}`); loadUsers(); } catch (err) { show('us-err', err.message); }
     });
-  } catch (err) { show('us-err', err.message); }
+    $('us-rows').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+      show('us-err'); show('us-ok');
+      if (!confirm(`Delete the login for ${b.dataset.email}? They will no longer be able to sign in. Their past requests stay in the list. This can't be undone.`)) return;
+      b.disabled = true;
+      try { await api('POST', `/admin/users/${encodeURIComponent(b.dataset.del)}/delete`); show('us-ok', `Deleted the login for ${b.dataset.email}.`); loadUsers(); } catch (err) { show('us-err', err.message); b.disabled = false; }
+    });
 }
 $('f-user').onsubmit = async e => {
   e.preventDefault(); show('us-err'); show('us-ok');
